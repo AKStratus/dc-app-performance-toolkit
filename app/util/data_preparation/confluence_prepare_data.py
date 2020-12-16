@@ -32,12 +32,19 @@ def __create_data_set(rest_client, rpc_client):
     perf_user_api = ConfluenceRestClient(CONFLUENCE_SETTINGS.server_url, perf_user['username'], DEFAULT_USER_PASSWORD)
     dataset[PAGES] = __get_pages(perf_user_api, 5000)
     dataset[BLOGS] = __get_blogs(perf_user_api, 5000)
-    dataset[CUSTOM_PAGES] = __get_custom_pages(perf_user_api, 5000, CONFLUENCE_SETTINGS.custom_dataset_query)
+    dataset[CUSTOM_PAGES] = __get_custom_pages_lite(perf_user_api, 5000, CONFLUENCE_SETTINGS.custom_dataset_query)
+    
     print(f'Users count: {len(dataset[USERS])}')
     print(f'Pages count: {len(dataset[PAGES])}')
     print(f'Blogs count: {len(dataset[BLOGS])}')
     print('------------------------')
     print(f'Custom pages count: {len(dataset[CUSTOM_PAGES])}')
+    print(f'custom_dataset_query: {CONFLUENCE_SETTINGS.custom_dataset_query}')
+    
+    if len(dataset[CUSTOM_PAGES]) == 0 and CONFLUENCE_SETTINGS.custom_dataset_query:
+        perf_user_api.create_app_pages()
+        dataset[CUSTOM_PAGES] = __get_custom_pages(perf_user_api, 5000, CONFLUENCE_SETTINGS.custom_dataset_query)
+        
     return dataset
 
 
@@ -88,6 +95,12 @@ def __get_custom_pages(confluence_api, count, cql):
             raise SystemExit(f"ERROR: There are no pages in Confluence could be found with CQL: {cql}")
     return pages
 
+def __get_custom_pages_lite(confluence_api, count, cql):
+    pages = []
+    if cql:
+        pages = confluence_api.get_content_search(
+            0, count, cql=cql)
+    return pages
 
 def __get_blogs(confluence_api, count):
     blogs = confluence_api.get_content_search(

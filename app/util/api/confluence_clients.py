@@ -2,6 +2,9 @@ import xmlrpc.client
 
 from util.api.abstract_clients import RestClient, Client
 from lxml import html
+from random import choices
+import random
+import string
 
 BATCH_SIZE_SEARCH = 500
 
@@ -162,6 +165,24 @@ class ConfluenceRestClient(RestClient):
         groups = [group['name'] for group in response.json()['results']]
         return groups
 
+    def create_app_pages(self):
+        api_url = f'{self.host}/rest/api/content/'
+        space_api_url = f'{self.host}/rest/api/space/'
+        
+        space_key = ''.join([random.choice(string.ascii_lowercase) for _ in range(5)])
+        spaceJson = '{"key": "' + space_key + '","name": "Plantuml Space '+ space_key + '","description": {"plain": {"value": "This is an example space","representation": "plain"}},"metadata": {}}'
+        space_response = self.post2(space_api_url, error_msg='error creating app page', body=spaceJson)
+        spaceId = space_response.json().get('id')
+        
+        for x in range(100):
+            bodyStr = '{"type": "page","title": "AppPage PlantUml ' + str(x) + '","space": {"key": "'+ space_key +'"},"body": {	"storage": {"value": "<p><ac:structured-macro ac:name=\\\"plantumlcloud\\\" ac:schema-version=\\\"1\\\" ac:macro-id=\\\"09b72170-004e-418f-b81c-7c41dc8ddaac\\\"><ac:parameter ac:name=\\\"filename\\\">Diagram1.png<\/ac:parameter><ac:parameter ac:name=\\\"data\\\">VU9BCsMwDHtN7iHtB7qddtthHwitlxpSp7OdwX4\/J2WDgsGyLGHZjV40stYtOz91aN0N041QXfD3NQq44XKQD44kT+DzgoqCMYxp7ebgrXKh1MhKhB3FWfGN+nHh+hftXGYQaTp4VWRoUDBRzAa0\/CSwmAVosbkfO8IAb0hRsdA5j2jZm2T0ZrHHvg==<\/ac:parameter><ac:parameter ac:name=\\\"width\\\" \/><ac:parameter ac:name=\\\"compressed\\\">true<\/ac:parameter><ac:parameter ac:name=\\\"revision\\\">1<\/ac:parameter><\/ac:structured-macro><\/p>","representation": "storage"}}}'
+            
+            response = self.post2(api_url, error_msg='error creating app page', body=bodyStr)
+            pageId = response.json().get('id')
+            plant_url = f'{self.host}/rest/plantumlcloudrest/1.0/plantumlcloud/{pageId}'
+            responseP = self.post2(plant_url, error_msg='error uploading diagram app page', body='{"data":"VU9BCsMwDHtN7iHtB7qddtthHwitlxpSp7OdwX4/J2WDgsGyLGHZjV40stYtOz91aN0N041QXfD3NQq44XKQD44kT+DzgoqCMYxp7ebgrXKh1MhKhB3FWfGN+nHh+hftXGYQaTp4VWRoUDBRzAa0/CSwmAVosbkfO8IAb0hRsdA5j2jZm2T0ZrHHvg==","filename":"Diagram1","width":"","revision":"","compressed":true}')
+
+        return "Finished"
 
 class ConfluenceRpcClient(Client):
 
